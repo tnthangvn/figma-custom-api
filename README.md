@@ -1,12 +1,10 @@
 # Custom MCP + API
 
 MCP server nay cung cap 2 tools:
-
 - `api_get`: goi GET den API ngoai
 - `api_post`: goi POST den API ngoai
 
 Figma tools:
-
 - `figma_get_file`
 - `figma_get_file_nodes`
 - `figma_get_images`
@@ -39,7 +37,6 @@ npm start
 ```
 
 Mac dinh server chay MCP HTTP tai:
-
 - `http://localhost:3006/mcp`
 - health check: `http://localhost:3006/health`
 
@@ -77,21 +74,57 @@ npm run pm2:stop
 ```
 
 PM2 da set san:
-
 - `MCP_TRANSPORT=http`
 - `PORT=3006`
 
-## 3) Cau hinh MCP client
+## 3) Setup MCP cho Antigravity
 
-Vi du file cau hinh MCP (dang JSON):
+File config cua Antigravity:
+- `/home/thangtn/.gemini/antigravity/mcp_config.json`
+
+### 3.1) Cach khuyen nghi (HTTP MCP qua PM2)
+
+1. Chay server bang PM2:
+
+```bash
+cd /var/www/free-time/mcp/figma-mcp
+pnpm build
+npm run pm2:start
+```
+
+2. Kiem tra health:
+
+```bash
+curl -sS http://127.0.0.1:3006/health
+```
+
+3. Copy config nay vao `mcp_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "custom-api": {
+    "figma-custom-api": {
+      "transport": "streamable_http",
+      "url": "http://127.0.0.1:3006/mcp"
+    }
+  }
+}
+```
+
+Neu Antigravity chay o may khac, thay `127.0.0.1` bang IP/domain cua server.
+
+### 3.2) Fallback (stdio)
+
+Dung cach nay neu ban muon Antigravity tu spawn process:
+
+```json
+{
+  "mcpServers": {
+    "figma-custom-api": {
       "command": "node",
-      "args": ["/var/www/free-time/mcp/figma-mcp/src/index.js"],
+      "args": ["/var/www/free-time/mcp/figma-mcp/dist/index.js"],
       "env": {
+        "MCP_TRANSPORT": "stdio",
         "API_BASE_URL": "https://api.figma.com/",
         "API_KEY": "figma_personal_access_token"
       }
@@ -100,12 +133,25 @@ Vi du file cau hinh MCP (dang JSON):
 }
 ```
 
-Neu client da nap server thanh cong, ban co the goi:
+### 3.3) Reload Antigravity
 
-- `api_get` voi `path` + `query`
-- `api_post` voi `path` + `payload`
+- Tat/bat lai MCP connector trong UI hoac restart Antigravity sau khi sua config.
+- Neu da connect thanh cong, ban se thay danh sach tools tu server.
 
-## 4) Vi du dung tool
+## 4) Danh sach tool se hien trong Antigravity
+
+- `api_get`
+- `api_post`
+- `figma_get_file`
+- `figma_get_file_nodes`
+- `figma_get_images`
+- `figma_get_comments`
+- `figma_post_comment`
+- `figma_get_versions`
+- `figma_get_team_projects`
+- `figma_get_project_files`
+
+## 5) Vi du dung tool
 
 `api_get` (lay thong tin file Figma)
 
@@ -127,7 +173,19 @@ Neu client da nap server thanh cong, ban co the goi:
 }
 ```
 
-## 5) Cài đặt Filesystem MCP Server
+## 6) Troubleshoot nhanh
+
+- Khong thay tool moi:
+  - Chay lai `pnpm build && npm run pm2:restart`
+  - Reload Antigravity
+- Loi ket noi MCP:
+  - Kiem tra `curl http://127.0.0.1:3006/health`
+  - Kiem tra log `npm run pm2:logs`
+- Loi auth Figma 401:
+  - Kiem tra `API_KEY` trong `.env`
+  - Dam bao token co quyen doc file/team/project can truy cap
+
+## 7) Cài đặt Filesystem MCP Server
 
 Để cho phép AI Agent thao tác với file hệ thống thông qua MCP, bạn cần cài đặt thêm `filesystem` MCP server. Dưới đây là hướng dẫn chi tiết:
 
